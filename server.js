@@ -3,12 +3,15 @@ const path = require('path');
 const api = require('./routes/index.js');
 
 const PORT = process.env.port || 3001;
+
 const app = express();
 
+// IF middleware:
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api', api);
 
-// IF middleware:
+app.use(express.static('public'));
 
 // GET Route for homepage
 app.get('/', (req, res) => 
