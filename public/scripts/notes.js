@@ -1,48 +1,110 @@
-/** // TODO write notes js to include: 
-    Save icon element send data in text boxes to db.json
-    Add icon to push note to list
-    Click list item to edit note
- */
 const noteTitle = document.getElementById('note-title');
 const noteTextarea = document.getElementById('note-textarea');
+const saveIcon = document.getElementById('save-icon');
+const writeIcon = document.getElementById('write-icon');
 
-const createCard = (note) => {
-    // Create card
-    const cardEl = document.createElement('div');
-    cardEl.classList.add('card', 'mb-3', 'm-3');
-    cardEl.setAttribute('key', note.note_id);
+const titleInput = document.querySelector('.note-title');
+const textArea = document.querySelector('.note-textarea');
 
-  // Create card header
-    const cardHeaderEl = document.createElement('h4');
-    cardHeaderEl.classList.add(
-        'card-header',
-        'bg-primary',
-        'text-light',
-        'p-2',
-        'm-0'
-    );
-    cardHeaderEl.innerHTML = `${note.username} </br>`;
-
-  // Create card body
-    const cardBodyEl = document.createElement('div');
-    cardBodyEl.classList.add('card-body', 'bg-light', 'p-2');
-    cardBodyEl.innerHTML = `<p>${note.note}</p>`;
-
-  // Append the header and body to the card element
-    cardEl.appendChild(cardHeaderEl);
-    cardEl.appendChild(cardBodyEl);
-
-  // Append the card element to the notes container in the DOM
-    noteContainer.appendChild(cardEl);
+const populateForm = (note) => {
+    titleInput.value = note.title;
+    textArea.value = note.text;
 };
 
-// TODO: Get a list of existing notes from the server
+const addCardClickListener = (note) => {
+    const card = document.querySelector(`.list-group-item[data-title="${note.title}"]`);
+    card.addEventListener('click', () => {
+        populateForm(note);
+    });
+};
 
-// TODO: Post a new note to the page
+const createCard = (note) => {
+    const card = document.createElement('li');
+    card.classList.add('list-group-item');
 
-// TODO: When the page loads, get all the tips
+    const cardHeader = document.createElement('div');
+    cardHeader.classList.add('card-header');
+    cardHeader.innerHTML = `${note.title}<i class="fas fa-trash text-danger delete-note mx-5" data-title="${note.title}"></i>`;
 
-// TODO: Function to validate the notes that were submitted
+    card.appendChild(cardHeader);
+
+    const notesContainer = document.getElementById('notes-container');
+    notesContainer.appendChild(card);
+};
+
+// Get a list of existing notes from the server
+const getNotes = () =>
+    fetch('/api/notes')
+        .then((response) => response.json())
+        .then((data) => {
+            data.forEach((note) => {
+                createCard(note);
+                addDeleteListener(note);
+            });
+            return data;
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+
+// Post a new note to the page
+const postNote = (note) =>
+    fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: note.title, text: note.text }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            alert(data);
+            createCard({ title: note.title }); // Display only the note title in the card
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+
+// When the page loads, get all the notes
+getNotes();
+
+// Function to validate the notes that were submitted
+const validateNote = (newNote) => {
+    const { username, topic, note } = newNote;
+
+    // Object to hold our error messages until we are ready to return
+    const errorState = {
+        username: '',
+        note: '',
+        topic: '',
+    };
+
+    // Bool value if the username is valid
+    const utest = username.length >= 4;
+    if (!utest) {
+        errorState.username = 'Invalid username!';
+    }
+
+    // Bool value to see if the note being added is at least 15 characters long
+    const noteContentCheck = note.length > 15;
+    if (!noteContentCheck) {
+        errorState.note = 'note must be at least 15 characters';
+    }
+
+    // Bool value to see if the topic is either UX or UI
+    const topicCheck = topic.includes('UX' || 'UI');
+    if (!topicCheck) {
+        errorState.topic = 'Topic not relevant to UX or UI';
+    }
+
+    const result = {
+        isValid: !!(utest && noteContentCheck && topicCheck),
+        errors: errorState,
+    };
+
+    // Return result object with a isValid boolean and an errors object for any errors that may exist
+    return result;
+};
 
 // Helper function to deal with errors that exist in the result
 const showErrors = (errorObj) => {
@@ -63,9 +125,81 @@ const submitDiagnostics = (submissionObj) => {
         },
         body: JSON.stringify(submissionObj),
     })
-    .then((response) => response.json())
-    .then(() => showErrors(submissionObj.errors))
-    .catch((error) => {
-        console.error('Error:', error);
+        .then((response) => response.json())
+        .then(() => showErrors(submissionObj.errors))
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+};
+
+const checkFormInputs = () => {
+    const titleInput = document.querySelector('.note-title');
+    const textArea = document.querySelector('.note-textarea');
+
+    const hasText = titleInput.value.trim() !== '' && textArea.value.trim() !== '';
+
+    const saveIcon = document.getElementById('save-icon');
+    saveIcon.style.display = hasText ? 'inline' : 'none';
+};
+
+const deleteCardFromHTML = (deleteButton) => {
+    const card = deleteButton.closest('.list-group-item');
+    card.remove();
+};
+
+const deleteNoteFromDB = (noteTitle) => {
+    fetch('/api/notes', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: noteTitle }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            alert(data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+};
+
+const addDeleteListener = (note) => {
+    const deleteButton = document.querySelector(`.delete-note[data-title="${note.title}"]`);
+    deleteButton.addEventListener('click', () => {
+        deleteNoteFromDB(note.title);
+        deleteCardFromHTML(deleteButton);
     });
 };
+
+saveIcon.addEventListener('click', (event) => {
+    event.preventDefault();
+
+    const titleInput = document.querySelector('.note-title');
+    const textArea = document.querySelector('.note-textarea');
+
+    const newNote = {
+        title: titleInput.value,
+        text: textArea.value,
+    };
+
+    postNote(newNote);
+
+    titleInput.value = '';
+    textArea.value = '';
+});
+
+writeIcon.addEventListener('click', (event) => {
+    event.preventDefault();
+
+    const titleInput = document.querySelector('.note-title');
+    const textArea = document.querySelector('.note-textarea');
+
+    titleInput.value = '';
+    textArea.value = '';
+});
+
+titleInput.addEventListener('input', checkFormInputs);
+textArea.addEventListener('input', checkFormInputs);
+
+checkFormInputs();
