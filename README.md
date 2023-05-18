@@ -2,7 +2,7 @@
 
 ## Description
 
-This application can help you compile and save all of your notes. 
+This application can help you compile and save all of your notes. You can write new notes and save them to the database, view old notes, and manage the deletion of notes that are no longer needed. 
 
 ## Table of Contents:
 
@@ -16,6 +16,8 @@ This application can help you compile and save all of your notes.
 
 ## Installation
 
+First, download this repository.
+
 Open your terminal and direct into the note-taker folder
 
 Run this command in your terminal:
@@ -25,6 +27,8 @@ npm i
 ```
 
 ## Usage
+
+The application is currently running on [Heroku](https://fathomless-dawn-50016.herokuapp.com/)!
 
 To use the application run this in your terminal:
 
